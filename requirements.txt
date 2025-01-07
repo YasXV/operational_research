@@ -1,0 +1,6 @@
+numpy
+matplotlib
+networkx
+pytest
+python-dateutil
+os
