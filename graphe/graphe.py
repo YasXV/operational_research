@@ -1,5 +1,6 @@
 import random
 import os 
+import time 
 import numpy as np
 import networkx as nx
 import matplotlib
@@ -21,6 +22,7 @@ class Graphe:
         self.calcul_coloration = False
         self.avec_poids=avec_poids
         self.oriente = oriente
+        self.temps=0
 
     def ajouter_sommet(self, un_sommet=None, sommets=[]):
         """
@@ -38,7 +40,7 @@ class Graphe:
                 # On réinitialise la coloration
                 self.couleurs = {}
             else:
-                raise ValueError(f"Le sommet {sommet} est déjà présent dans le graphe")
+                print(f"Le sommet {sommet} est déjà présent dans le graphe")
 
 
     def supprimer_sommet(self, un_sommet=None, sommets=[]):
@@ -63,7 +65,7 @@ class Graphe:
                 del self.liste_adjacence[sommet]
                 sommets_supprimes.add(sommet)
             else:
-                raise ValueError(f"Le sommet {sommet} que vous essayez de supprimer n'est pas dans le graphe.")
+                print(f"Le sommet {sommet} que vous essayez de supprimer n'est pas dans le graphe.")
 
         if sommets_supprimes:
             # Dès qu'une modification est appliquée, la coloration devient caduque.
@@ -78,14 +80,11 @@ class Graphe:
         Ajoute une arête entre deux sommets passés en paramètres, ou une liste d'arêtes.
         Chaque arête peut être un tuple (sommet1, sommet2, poids).
         """
-        print("WOUHOUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUu1111111111111111111111111111")
-        if len(edges)>0:  # Si une liste d'arêtes est fournie
-            print("WOUHOUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUu")
+        if edges:  # Si une liste d'arêtes est fournie
             for edge in edges:
                 if len(edge) == 3:
                     s1, s2, p = edge
                 elif len(edge) == 2:
-                    print("JE SUIS LAAAAAAAAAa")
                     s1, s2 = edge
                     p = poids  # Utiliser le poids par défaut si non spécifié
                 else:
@@ -101,17 +100,18 @@ class Graphe:
                 self.ajouter_sommet(sommet1)
             if sommet2 not in self.liste_adjacence:
                 self.ajouter_sommet(sommet2)
-            
             # Vérifier si l'arête existe déjà
+            #Ici on a décidé de seulement faire un print pour spécifier à l'utilisateur qu'il a essayé d'ajouter une arrête existante pour qu'il soit au courant de son erreur mais que le programme continue de tourner
             if sommet2 in self.liste_adjacence[sommet1]:
-                raise ValueError(f"L'arête entre {sommet1} et {sommet2} existe déjà avec un poids de {self.liste_adjacence[sommet1][sommet2]}.")
+                print(f"L'arête entre {sommet1} et {sommet2} existe déjà avec un poids de {self.liste_adjacence[sommet1][sommet2]}. Celle-ci n'a pas été ajouté.")
             
-            # Ajouter l'arête avec son poids
-            self.liste_adjacence[sommet1][sommet2] = poids
-            
-            # Si le graphe n'est pas orienté, ajouter également l'arête dans l'autre sens
-            if not self.oriente:
-                self.liste_adjacence[sommet2][sommet1] = poids
+            else :
+                # Ajouter l'arête avec son poids
+                self.liste_adjacence[sommet1][sommet2] = poids
+                
+                # Si le graphe n'est pas orienté, ajouter également l'arête dans l'autre sens
+                if not self.oriente:
+                    self.liste_adjacence[sommet2][sommet1] = poids
 
             # Marquer la coloration comme non calculée car la structure du graphe a changé
             self.calcul_coloration = False
@@ -151,7 +151,7 @@ class Graphe:
                 self.calcul_coloration = False
                 self.couleurs = {}
             else:
-                raise ValueError(f"L'arête entre {sommet1} et {sommet2} que vous cherchez à supprimer n'existe pas dans ce graphe.")
+                raise print(f"L'arête entre {sommet1} et {sommet2} que vous cherchez à supprimer n'existe pas dans ce graphe.")
 
 
     def nombre_edges(self):
@@ -181,6 +181,7 @@ class Graphe:
         """
         Affiche une version simple du graphe 
         """
+        print(list(self.liste_adjacence.keys()))
         print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}")
         for sommet, voisins in self.liste_adjacence.items():
             print(f"{sommet}: {voisins}")
@@ -190,9 +191,12 @@ class Graphe:
         ananlyse la coloration à travers divers paramétres
         """
         if(self.calcul_coloration):
-            print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}\n")
+            print(f"Oriente : {self.oriente}")
+            print(f"Avec poids : {self.avec_poids}")
+            print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}")
             print(f"Nombre de couleurs : {self.nombre_couleurs()}")
             print(f"Nombre de conflits :{self.conflits}")
+            print(f"Temps d'exécution : {self.temps :.7f} s")
         else :
             raise ValueError("Coloration pas encore appliqué au graphe ou graphe modifié!")
 
@@ -239,7 +243,6 @@ class Graphe:
         """
         Ecris le graphe dans un fichier JSON
         """
-        print("J4ECRIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIs")
         data = {"oriente": self.oriente, "avec_poids": self.avec_poids, "graphe": self.liste_adjacence}
         os.makedirs(self.GRAPHE_DIR, exist_ok=True)
         chemin_complet = os.path.join(self.GRAPHE_DIR, chemin_fichier)
@@ -357,6 +360,8 @@ class Graphe:
         Implémentation de l'algorithme Welsh-Powell pour la coloration du graphe.
         Prend en compte l'orientation et les poids si définis.
         """
+        temps = time.time()
+
         # Étape 1 : Trier les sommets par un critère combinant le degré (ou rang) et le poids des arêtes
         def critere(sommet):
             if self.avec_poids:
@@ -379,20 +384,21 @@ class Graphe:
 
         # Étape 2 : Coloration des sommets
         for sommet in sommets_tries:
-            # Ensemble des couleurs utilisées par les voisins (sortants ou les deux directions selon l'orientation)
             couleurs_voisins = set()
 
+            # Gérer les voisins dans les deux sens pour les graphes orientés
+            voisins = set(self.liste_adjacence[sommet])  # Voisins sortants
             if self.oriente:
-                # Pour un graphe orienté, seuls les voisins sortants sont pris en compte
-                couleurs_voisins = {self.couleurs[voisin] for voisin in self.liste_adjacence[sommet] if voisin in self.couleurs}
-            else:
-                # Pour un graphe non orienté, traiter les voisins dans les deux sens
-                for voisin in self.liste_adjacence[sommet]:
-                    if voisin in self.couleurs:
-                        couleurs_voisins.add(self.couleurs[voisin])
-                    if sommet in self.liste_adjacence.get(voisin, {}):
-                        couleurs_voisins.add(self.couleurs.get(sommet))
+                # Ajouter les voisins entrants (tous les sommets ayant 'sommet' comme voisin sortant)
+                voisins |= {v for v, adj in self.liste_adjacence.items() if sommet in adj}
+
+            print(f"Sommet : {sommet}, Voisins : {voisins}")
+            for voisin in voisins:
+                if voisin in self.couleurs:
+                    couleurs_voisins.add(self.couleurs[voisin])
+
             print(f"TEST : {couleurs_voisins}")
+
             # Trouver la première couleur disponible
             couleur = 0
             while couleur in couleurs_voisins:
@@ -407,24 +413,74 @@ class Graphe:
         # Évaluer les conflits éventuels
         self.evaluation_conflits()
 
+        self.temps = time.time() - temps
+
 
 
 
     def afficher_graphe_colore(self):
         """
-        Afficke le graphe coloré 
+        Affiche le graphe coloré avec support des graphes orientés.
+        Les arêtes orientées affichent leurs poids respectifs.
         """
-        G = nx.Graph()
+        # Choisir le type de graphe : orienté ou non
+        G = nx.DiGraph() if self.oriente else nx.Graph()
+
+        # Ajouter les arêtes
         for sommet, voisins in self.liste_adjacence.items():
             for voisin, poids in voisins.items():
-                G.add_edge(sommet, voisin, weight=poids)
+                if self.avec_poids:
+                    G.add_edge(sommet, voisin, weight=poids)
+                else:
+                    G.add_edge(sommet, voisin)
 
+        # Disposition des nœuds
         pos = nx.spring_layout(G)
+
+        # Gestion des couleurs des sommets
         couleurs = [self.couleurs[s] if s in self.couleurs else 0 for s in G.nodes()]
-        nx.draw(G, pos, with_labels=True, node_color=couleurs, cmap=plt.cm.rainbow, node_size=500)
-        nx.draw_networkx_edge_labels(G, pos, edge_labels={(u, v): d["weight"] for u, v, d in G.edges(data=True)})
+
+        # Dessiner uniquement les nœuds (sans les arêtes automatiques)
+        nx.draw(
+            G,
+            pos,
+            with_labels=True,
+            node_color=couleurs,
+            cmap=plt.cm.rainbow,
+            node_size=500,
+            edgelist=[],  # Désactiver les arêtes automatiques
+        )
+
+        # Dessiner les arêtes manuellement
+        for u, v, d in G.edges(data=True):
+            # Dessiner une arête individuelle avec une flèche
+            nx.draw_networkx_edges(
+                G,
+                pos,
+                edgelist=[(u, v)],
+                arrowstyle='-|>',
+                arrowsize=15,
+                connectionstyle='arc3,rad=0.2',  # Courbure pour arêtes orientées opposées
+                edge_color="black",
+            )
+
+            # Ajouter les étiquettes de poids
+            if "weight" in d:
+                nx.draw_networkx_edge_labels(
+                    G,
+                    pos,
+                    edge_labels={(u, v): d["weight"]},
+                    font_color="red",
+                )
+
+        # Afficher le graphe
         plt.show(block=False)
         plt.pause(20)
+
+
+
+
+
 
 
     def evaluation_conflits(self):
@@ -451,92 +507,105 @@ class Graphe:
 
         else:
             raise ValueError("Pas de coloration pour laquelle on peut déterminer les conflits")
+
+    '''def hill_climbing(self, iterations=1000):
+        """
+        Implémentation de Hill Climbing avec priorités :
+        1. Nombre de conflits.
+        2. Degré (nombre de voisins).
+        3. Poids total des arêtes (si pondéré).
+        """
+        temps = time.time()
+
+        # Étape 1 : Initialisation aléatoire de la coloration
+        self.initialiser_coloration()
+
+        # Étape 2 : Définir le critère de sélection des sommets
+        def critere_selection(sommet):
+            """
+            Retourne une clé de tri pour choisir le sommet selon :
+            1. Nombre de conflits (ordre décroissant).
+            2. Degré (ordre décroissant).
+            3. Poids total des arêtes (ordre décroissant).
+            """
+            # Nombre de conflits
+            voisins = self.liste_adjacence[sommet].keys()
+            couleurs_voisins = {self.couleurs[v] for v in voisins if v in self.couleurs}
+            nb_conflits = 1 if self.couleurs[sommet] in couleurs_voisins else 0
+
+            # Degré (nombre de voisins)
+            degre = len(voisins)
+
+            # Poids total des arêtes (si pondéré)
+            poids_total = sum(self.liste_adjacence[sommet].values()) if self.avec_poids else 0
+
+            # Retourner une clé pour le tri
+            return (-nb_conflits, -degre, -poids_total)
+
+        for _ in range(iterations):
+            # Étape 3 : Calcul des conflits et tri des sommets
+            sommets_tries = sorted(self.sommets, key=critere_selection)
+
+            # Si aucun sommet n'a de conflit, on arrête
+            if critere_selection(sommets_tries[0])[0] == 0:
+                break
+
+            # Étape 4 : Choisir le sommet avec le plus grand conflit
+            sommet_a_modifier = sommets_tries[0]
+            couleur_actuelle = self.couleurs[sommet_a_modifier]
+
+            # Étape 5 : Trouver une nouvelle couleur
+            voisins = self.liste_adjacence[sommet_a_modifier].keys()
+            couleurs_voisins = {self.couleurs[v] for v in voisins if v in self.couleurs}
+            nouvelle_couleur = 0
+            while nouvelle_couleur in couleurs_voisins:
+                nouvelle_couleur += 1
+
+            # Appliquer la nouvelle couleur temporairement
+            self.couleurs[sommet_a_modifier] = nouvelle_couleur
+
+            # Étape 6 : Réévaluer les conflits
+            conflits_avant = critere_selection(sommet_a_modifier)[0]
+            conflits_apres = 0
+            for voisin in voisins:
+                if self.couleurs[voisin] == nouvelle_couleur:
+                    conflits_apres += 1
+
+            # Si la nouvelle couleur réduit les conflits, on la garde
+            if conflits_apres < conflits_avant:
+                continue
+            else:
+                # Sinon, revenir à l'ancienne couleur
+                self.couleurs[sommet_a_modifier] = couleur_actuelle
+
+        #temps d'éxécution 
+        self.temps = time.time - temps
+
         
     def initialiser_coloration(self):
         """
         Initialiser la coloration du graphe de manière aléatoire.
         Chaque sommet reçoit une couleur aléatoire différente.
         """
-        for sommet in self.sommets:
-            self.couleurs[sommet] = random.randint(0, len(self.sommets) - 1)
+        for sommet in self.liste_adjacence.keys():
+            self.couleurs[sommet] = random.randint(0, len(self.liste_adjacence.keys()) - 1)'''
 
     def conflit(self, sommet):
         """
         Calculer le nombre de conflits de coloration pour un sommet donné.
         Un conflit se produit si un voisin a la même couleur que le sommet.
-        :param sommet: Le sommet pour lequel on évalue les conflits.
-        :return: Le nombre de conflits.
         """
         conflicts = 0
-        for voisin in self.liste_adjacence[sommet]:
+        voisins = self.liste_adjacence[sommet].keys() if self.oriente else self.liste_adjacence[sommet]
+        for voisin in voisins:
             if self.couleurs[sommet] == self.couleurs.get(voisin, -1):
                 conflicts += 1
         return conflicts
 
-        
-
-def hill_climbing(self, iterations=1000):
-    # Initialisation aléatoire de la coloration
-    self.initialiser_coloration()
-
-    for _ in range(iterations):
-        # Calcul des conflits pour chaque sommet
-        conflits = {sommet: self.conflit(sommet) for sommet in self.liste_adjacence}
-
-        # Si tous les sommets sont colorés sans conflit, on arrête
-        if sum(conflits.values()) == 0:
-            break
-
-        # Sélectionner le sommet avec le plus de conflits
-        sommet_a_modifier = max(conflits, key=conflits.get)
-
-        # Sauvegarder la couleur actuelle pour pouvoir revenir en arrière si nécessaire
-        couleur_actuelle = self.couleurs[sommet_a_modifier]
-
-        # Appliquer une modification de couleur
-        # On cherche un voisin qui pourrait donner une meilleure couleur
-        sommet, couleur_nouvelle = self.voisin(sommet_a_modifier)
-
-        # Calculer les conflits avant et après le changement de couleur
-        conflits_avant = self.conflit(sommet_a_modifier)
-
-        # Si la modification a amélioré la solution (réduit les conflits), on garde la couleur
-        if self.conflit(sommet) < conflits_avant:
-            # Appliquer la nouvelle couleur
-            self.couleurs[sommet_a_modifier] = couleur_nouvelle
-        else:
-            # Sinon, on revient à la couleur initiale (pas d'amélioration)
-            self.couleurs[sommet_a_modifier] = couleur_actuelle
-
-    return self.couleurs
-
-
-
-
-'''
-def tester_plusieurs_graphes():
-    configurations = [
-        {"nombre_sommets": 10, "densite": 0.3},
-        {"nombre_sommets": 50, "densite": 0.2},
-        {"nombre_sommets": 100, "densite": 0.1},
-        {"nombre_sommets": 200, "densite": 0.05},
-    ]
-
-    for config in configurations:
-        graphe = Graphe.generer_graphe_aleatoire(config["nombre_sommets"], config["densite"])
-        print(f"\nTest avec {config['nombre_sommets']} sommets et densité {config['densite']} :")
-
-        debut = time.time()
-        couleurs = coloration_greedy(graphe)
-        fin = time.time()
-
-        conflits = evaluation_coloration(graphe, couleurs)
-        nombre_couleurs = max(couleurs.values()) + 1
-
-        print(f" - Nombre de couleurs utilisées : {nombre_couleurs}")
-        print(f" - Nombre de conflits : {conflits}")
-        print(f" - Temps d'exécution : {fin - debut:.4f} secondes")
-'''
+if __name__ == "__main__":
+    test1 = Graphe.generer_graphe_aleatoire(10,0.2)
+    test1.welsh_powell()
+    test1.afficher_graphe_colore()
 
 
 

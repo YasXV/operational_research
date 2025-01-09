@@ -7,9 +7,9 @@ def test_ajouter_sommet():
     assert "1" in g.liste_adjacence
 
 
-def test_coloration_greedy():
+def welsh():
     graphe = Graphe.generer_graphe_aleatoire(30, 0.5)
-    graphe.coloration_greedy()
+    graphe.welsh_powell()
 
     # Vérifie qu'aucun sommet n'a la même couleur que ses voisins
     for sommet, voisins in graphe.liste_adjacence.items():
