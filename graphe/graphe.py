@@ -194,7 +194,7 @@ class Graphe:
         if(self.calcul_coloration):
             print(f"Oriente : {self.oriente}")
             print(f"Avec poids : {self.avec_poids}")
-            print(f"algorithme : {self.algo}")
+            print(f"Algorithme : {self.algo}")
             print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}")
             print(f"Nombre de couleurs : {self.nombre_couleurs()}")
             print(f"Nombre de conflits :{self.conflits}")
@@ -402,7 +402,7 @@ class Graphe:
 
             #print(f"TEST : {couleurs_voisins}")
 
-            # Trouver la première couleur disponible
+            # Trouver la première couleur 
             couleur = 0
             while couleur in couleurs_voisins:
                 couleur += 1
@@ -480,10 +480,13 @@ class Graphe:
         plt.show(block=False)
         plt.pause(20)
 
-
-
-
-
+    def initialiser_coloration(self):
+        """
+        Initialise une couleur aléatoire pour chaque sommet.
+        Les couleurs sont choisies dans une plage allant de 0 au nombre maximal de sommets.
+        """
+        for sommet in self.liste_adjacence.keys():
+            self.couleurs[sommet] = random.randint(0, len(self.liste_adjacence.keys()) - 1)
 
 
     def evaluation_conflits(self):
@@ -510,88 +513,81 @@ class Graphe:
 
         else:
             raise ValueError("Pas de coloration pour laquelle on peut déterminer les conflits")
+        return self.conflits
+    
 
-    '''def hill_climbing(self, iterations=1000):
+
+    def hill_climbing(self, max_iterations=1000):
         """
-        Implémentation de Hill Climbing avec priorités :
-        1. Nombre de conflits.
-        2. Degré (nombre de voisins).
-        3. Poids total des arêtes (si pondéré).
+        Hill Climbing pour minimiser simultanément le nombre de couleurs et les conflits.
         """
         temps = time.time()
-
-        # Étape 1 : Initialisation aléatoire de la coloration
+        self.algo = "Hill Climbing"
+        self.calcul_coloration = True
         self.initialiser_coloration()
 
-        # Étape 2 : Définir le critère de sélection des sommets
-        def critere_selection(sommet):
-            """
-            Retourne une clé de tri pour choisir le sommet selon :
-            1. Nombre de conflits (ordre décroissant).
-            2. Degré (ordre décroissant).
-            3. Poids total des arêtes (ordre décroissant).
-            """
-            # Nombre de conflits
-            voisins = self.liste_adjacence[sommet].keys()
-            couleurs_voisins = {self.couleurs[v] for v in voisins if v in self.couleurs}
-            nb_conflits = 1 if self.couleurs[sommet] in couleurs_voisins else 0
+        nb_couleurs = max(self.couleurs.values()) + 1
 
-            # Degré (nombre de voisins)
-            degre = len(voisins)
+        def obtenir_voisins(sommet):
+            voisins = set(self.liste_adjacence[sommet])
+            if self.oriente:
+                voisins |= {v for v, adj in self.liste_adjacence.items() if sommet in adj}
+            return voisins
 
-            # Poids total des arêtes (si pondéré)
-            poids_total = sum(self.liste_adjacence[sommet].values()) if self.avec_poids else 0
+        for iteration in range(max_iterations):
+            print(f"iteration {iteration}")
+            amelioration = False
 
-            # Retourner une clé pour le tri
-            return (-nb_conflits, -degre, -poids_total)
+            for couleur in range(nb_couleurs):
+                sommets_a_recolorer = [s for s, c in self.couleurs.items() if c == couleur]
 
-        for _ in range(iterations):
-            # Étape 3 : Calcul des conflits et tri des sommets
-            sommets_tries = sorted(self.sommets, key=critere_selection)
+                for sommet in sommets_a_recolorer:
+                    couleur_actuelle = self.couleurs[sommet]
+                    voisins = obtenir_voisins(sommet)
+                    couleurs_voisins = {self.couleurs[v] for v in voisins if v in self.couleurs}
 
-            # Si aucun sommet n'a de conflit, on arrête
-            if critere_selection(sommets_tries[0])[0] == 0:
+                    # Chercher la meilleure couleur pour ce sommet
+                    meilleure_couleur = couleur_actuelle
+                    meilleur_conflit_local = self.conflit(sommet)
+                    conflit_global_avant = self.evaluation_conflits()
+
+                    for nouvelle_couleur in range(nb_couleurs):
+                        if nouvelle_couleur not in couleurs_voisins:
+                            self.couleurs[sommet] = nouvelle_couleur
+                            conflit_local = self.conflit(sommet)
+                            conflit_global = self.evaluation_conflits()
+
+                            if conflit_global < conflit_global_avant or (
+                                conflit_global == conflit_global_avant and conflit_local < meilleur_conflit_local
+                            ):
+                                meilleure_couleur = nouvelle_couleur
+                                meilleur_conflit_local = conflit_local
+
+                    # Appliquer la meilleure couleur
+                    if meilleure_couleur != couleur_actuelle:
+                        self.couleurs[sommet] = meilleure_couleur
+                        amelioration = True
+
+            # Réduire le nombre de couleurs inutiles
+            nb_couleurs = max(self.couleurs.values()) + 1
+
+            if not amelioration:
                 break
+ 
 
-            # Étape 4 : Choisir le sommet avec le plus grand conflit
-            sommet_a_modifier = sommets_tries[0]
-            couleur_actuelle = self.couleurs[sommet_a_modifier]
+        self.evaluation_conflits()
+        self.temps = time.time() - temps
 
-            # Étape 5 : Trouver une nouvelle couleur
-            voisins = self.liste_adjacence[sommet_a_modifier].keys()
-            couleurs_voisins = {self.couleurs[v] for v in voisins if v in self.couleurs}
-            nouvelle_couleur = 0
-            while nouvelle_couleur in couleurs_voisins:
-                nouvelle_couleur += 1
 
-            # Appliquer la nouvelle couleur temporairement
-            self.couleurs[sommet_a_modifier] = nouvelle_couleur
 
-            # Étape 6 : Réévaluer les conflits
-            conflits_avant = critere_selection(sommet_a_modifier)[0]
-            conflits_apres = 0
-            for voisin in voisins:
-                if self.couleurs[voisin] == nouvelle_couleur:
-                    conflits_apres += 1
 
-            # Si la nouvelle couleur réduit les conflits, on la garde
-            if conflits_apres < conflits_avant:
-                continue
-            else:
-                # Sinon, revenir à l'ancienne couleur
-                self.couleurs[sommet_a_modifier] = couleur_actuelle
 
-        #temps d'éxécution 
-        self.temps = time.time - temps
+
+
+
 
         
-    def initialiser_coloration(self):
-        """
-        Initialiser la coloration du graphe de manière aléatoire.
-        Chaque sommet reçoit une couleur aléatoire différente.
-        """
-        for sommet in self.liste_adjacence.keys():
-            self.couleurs[sommet] = random.randint(0, len(self.liste_adjacence.keys()) - 1)'''
+
 
     def conflit(self, sommet):
         """
@@ -599,18 +595,22 @@ class Graphe:
         Un conflit se produit si un voisin a la même couleur que le sommet.
         """
         conflicts = 0
-        voisins = self.liste_adjacence[sommet].keys() if self.oriente else self.liste_adjacence[sommet]
+        # Récupérer les voisins du sommet
+        voisins = set(self.liste_adjacence[sommet])  # Voisins sortants
+        if self.oriente:
+            # Ajouter les voisins entrants pour un graphe orienté
+            voisins |= {v for v, adj in self.liste_adjacence.items() if sommet in adj}
+
+        # Parcourir les voisins pour détecter les conflits
         for voisin in voisins:
             if self.couleurs[sommet] == self.couleurs.get(voisin, -1):
                 conflicts += 1
         return conflicts
+
     
 
 
-
-    #hors de la structure    
-    import os
-
+   
     def construire_graphe_depuis_dimacs(fichier_dimacs, oriente=False, avec_poids=False):
         """
         Fonction qui lit un fichier DIMACS et construit le graphe correspondant.
