@@ -23,6 +23,7 @@ class Graphe:
         self.avec_poids=avec_poids
         self.oriente = oriente
         self.temps=0
+        self.algo=""
 
     def ajouter_sommet(self, un_sommet=None, sommets=[]):
         """
@@ -151,7 +152,7 @@ class Graphe:
                 self.calcul_coloration = False
                 self.couleurs = {}
             else:
-                raise print(f"L'arête entre {sommet1} et {sommet2} que vous cherchez à supprimer n'existe pas dans ce graphe.")
+                print(f"L'arête entre {sommet1} et {sommet2} que vous cherchez à supprimer n'existe pas dans ce graphe.")
 
 
     def nombre_edges(self):
@@ -181,7 +182,7 @@ class Graphe:
         """
         Affiche une version simple du graphe 
         """
-        print(list(self.liste_adjacence.keys()))
+        #print(list(self.liste_adjacence.keys()))
         print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}")
         for sommet, voisins in self.liste_adjacence.items():
             print(f"{sommet}: {voisins}")
@@ -193,6 +194,7 @@ class Graphe:
         if(self.calcul_coloration):
             print(f"Oriente : {self.oriente}")
             print(f"Avec poids : {self.avec_poids}")
+            print(f"algorithme : {self.algo}")
             print(f"Nombre de sommets : {self.nombre_sommets()}\tNombre d'edges : {self.nombre_edges()}")
             print(f"Nombre de couleurs : {self.nombre_couleurs()}")
             print(f"Nombre de conflits :{self.conflits}")
@@ -361,6 +363,7 @@ class Graphe:
         Prend en compte l'orientation et les poids si définis.
         """
         temps = time.time()
+        self.algo="Welsh-powel"
 
         # Étape 1 : Trier les sommets par un critère combinant le degré (ou rang) et le poids des arêtes
         def critere(sommet):
@@ -379,8 +382,8 @@ class Graphe:
             key=lambda sommet: critere(sommet),
             reverse=True
         )
-        print("Sommets triés :", sommets_tries)
-        print(self.liste_adjacence)
+        #print("Sommets triés :", sommets_tries)
+        #print(self.liste_adjacence)
 
         # Étape 2 : Coloration des sommets
         for sommet in sommets_tries:
@@ -392,12 +395,12 @@ class Graphe:
                 # Ajouter les voisins entrants (tous les sommets ayant 'sommet' comme voisin sortant)
                 voisins |= {v for v, adj in self.liste_adjacence.items() if sommet in adj}
 
-            print(f"Sommet : {sommet}, Voisins : {voisins}")
+            #print(f"Sommet : {sommet}, Voisins : {voisins}")
             for voisin in voisins:
                 if voisin in self.couleurs:
                     couleurs_voisins.add(self.couleurs[voisin])
 
-            print(f"TEST : {couleurs_voisins}")
+            #print(f"TEST : {couleurs_voisins}")
 
             # Trouver la première couleur disponible
             couleur = 0
@@ -601,6 +604,51 @@ class Graphe:
             if self.couleurs[sommet] == self.couleurs.get(voisin, -1):
                 conflicts += 1
         return conflicts
+    
+
+
+
+    #hors de la structure    
+    import os
+
+    def construire_graphe_depuis_dimacs(fichier_dimacs, oriente=False, avec_poids=False):
+        """
+        Fonction qui lit un fichier DIMACS et construit le graphe correspondant.
+        
+        :param fichier_dimacs: Le chemin vers le fichier DIMACS.
+        """
+        #print("Début de la lecture du fichier DIMACS...")
+        graphe = Graphe(oriente=oriente, avec_poids=avec_poids)
+        chemin_complet = os.path.join(graphe.GRAPHE_DIR, fichier_dimacs)
+
+        # Vérification de l'existence du fichier avant de l'ouvrir
+        if not os.path.isfile(chemin_complet):
+            print(f"Erreur : Le fichier {chemin_complet} n'existe pas.")
+            return None
+
+        try:
+            with open(chemin_complet, 'r') as fichier:
+                #print("Le fichier a été ouvert avec succès.")
+                for ligne in fichier:
+                    #print(f"Lecture de la ligne: {ligne.strip()}")  # Affiche la ligne sans espaces blancs
+
+                    # Si la ligne commence par "e", c'est une arête
+                    if ligne.startswith('e'):
+                        # Divisez la ligne pour obtenir les deux sommets
+                        _, sommet1, sommet2 = ligne.split()
+
+                        # Ajouter l'arête (on conserve les sommets sous forme de str comme attendu)
+                        graphe.ajouter_edge(sommet1, sommet2)
+
+        except Exception as e:
+            print(f"Erreur lors de la lecture du fichier : {e}")
+            return None
+
+        # Retourner le graphe créé
+        #print("Lecture du fichier terminée.")
+        return graphe
+
+
 
 if __name__ == "__main__":
     test1 = Graphe.generer_graphe_aleatoire(10,0.2)
