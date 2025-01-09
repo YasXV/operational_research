@@ -5,21 +5,22 @@ VENV_BIN = $(VENV)\Scripts
 
 .PHONY: init install test clean
 
-# Initialiser le projet (création de l'environnement virtuel)
+#initialiser l'environnement virtuel
 init:
 	if exist $(VENV) ( \
 		echo "L'environnement virtuel $(VENV) existe déjà." \
 	) else ( \
 		echo "Création de l'environnement virtuel..." && \
 		$(PYTHON) -m venv $(VENV) && \
-		$(VENV_BIN)\pip install --upgrade pip && \
-		$(VENV_BIN)\pip install -r requirements.txt \
+		$(VENV_BIN)\python -m pip install --upgrade pip && \
+		
 	)
+
 
 # Installer les dépendances
 install:
 	$(VENV_BIN)\pip install -e .
-	$(VENV_BIN)\python -m pip install --upgrade pip
+	$(VENV_BIN)\pip install -r requirements.txt \
 
 # Lancer les tests
 test:
