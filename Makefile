@@ -12,14 +12,14 @@ init:
 	) else ( \
 		echo "Création de l'environnement virtuel..." && \
 		$(PYTHON) -m venv $(VENV) && \
-		$(VENV_BIN)\python -m pip install --upgrade pip && \
-		
+		$(VENV_BIN)\python -m pip install --upgrade pip \
 	)
+
 
 
 # Installer les dépendances
 install:
-	$(VENV_BIN)\pip install -e .
+	$(VENV_BIN)\pip install -e . && \
 	$(VENV_BIN)\pip install -r requirements.txt \
 
 # Lancer les tests

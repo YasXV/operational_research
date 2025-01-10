@@ -9,7 +9,6 @@ setup(
         "matplotlib",
         "networkx",
         "pytest",
-        "os"
     ],
     entry_points={
         "console_scripts": [
