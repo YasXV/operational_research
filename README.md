@@ -1,7 +1,7 @@
 # Projet de Recherche sur les Algorithmes de Coloration de Graphes
 
 ## Description
-Ce projet a pour but de développer et d'implémenter divers algorithmes de coloration de graphes. La coloration de graphes est un domaine important en théorie des graphes et a de nombreuses applications pratiques, telles que l'allocation de registres en compilation, la planification de tâches, et bien d'autres.
+Ce projet a pour but de développer une librairie permettant de construire des graphes et d'implémenter divers algorithmes de coloration de graphes. La librairie teste l'efficaicité d'une coloration (minimisation du nombre de couleurs, temps d'exécution de l'algorithme etc). La coloration de graphes est un domaine important en théorie des graphes et a de nombreuses applications pratiques, telles que l'allocation de registres en compilation, la planification de tâches, et bien d'autres.
 
 ## Structure du Projet
 La structure du projet est la suivante :
